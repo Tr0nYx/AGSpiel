@@ -15,11 +15,14 @@
             createCookies();
             addGlobalStyle(getGlobalStyle());
             if (/\bsection=agdepot\b/.test(location.search)) {
-                depotchanges();
+                depotChanges();
+            }
+            if (/\bsection=thread\b/.test(location.search)) {
+                forumChanges();
             }
         }
 
-        function depotchanges() {
+        function depotChanges() {
             createFormChangeCheckBoxes();
             $('#depot tr').each(function (i, v) {
                 if (i === 0) {
@@ -176,6 +179,15 @@
                 done(function (data) {
                     console.log(data);
                 });
+        }
+
+        function forumChanges() {
+            $('table.thread tr').each(function () {
+                var postid = $(this).children('td').children('td.posttext').prop('id');
+                $(this).children('td').children('h3').prepend('<a href="' + window.location + '#' + postid + '>#' + postid + '</a>');
+
+            })
+
         }
 
         function addGlobalStyle(css) {
