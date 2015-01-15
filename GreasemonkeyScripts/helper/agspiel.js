@@ -1,13 +1,15 @@
 // ==UserScript==
 // @name AG-Spiel.de Helper
 // @namespace http://notforu.com
-// @version 0.1
+// @version 0.0.2
 // @description adds some useful things to AG-Spiel.de
 // @match http://www.ag-spiel.de/*
 // @copyright 2014+, Tr0nYx
+// @updateUrl https://raw.githubusercontent.com/Tr0nYx/AGSpiel/master/GreasemonkeyScripts/helper/agspiel.js
 // @require http://code.jquery.com/jquery-latest.js
 // @require https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js
 // ==/UserScript==
+
 (function () {
     var AG_mainFunction = function () {
 
@@ -58,48 +60,20 @@
                 var aktie = $(this).closest('td').prev('td').prev('td').prev('td').children('a').last().prop('href').split("&")[1].split("=")[1];
                 var price = $(this).text();
                 var token = "";
-
-                console.log("http://www.ag-spiel.de/index.php?section=profil&aktie=" + aktie);
-                $.ajax({
-                    method: "GET",
-                    url: "http://www.ag-spiel.de/index.php?section=profil&aktie=" + aktie,
-                    onload: function (response) {
-                        /*GM_xmlhttpRequest({
-                         method: "GET",
-                         url: tokenurl,
-                         onload: function (response) {
-                         var div = $($.parseHTML(response.responseText)).find('#orderform');
-                         token = $(div).find('input[name=token]').val();
-                         //var maxstock = $(div).find('#briefkurs').children('a').last().prop('href').split("&")[3].split("=")[1];
-                         console.log($(div).find('#briefkurs').html());
-                         var amount = prompt("Bitte Anzahl die gekauft werden soll eingeben", maxstock);
-                         var params = new Object();
-                         params.aktie = aktie;
-                         params.anzahl = amount;
-                         params.limit = price;
-                         params.token = token;
-                         var jsonStr = JSON.stringify(myobject);
-
-                         if (token != "") {
-                         $.post(
-                         "http://www.ag-spiel.de/index.php?section=agorderbuch&action=create&ele=",
-                         {
-                         aktie: aglink,
-                         anzahl: amount,
-                         order: "buy",
-                         limit: price,
-                         token: token,
-                         submit: 'Order erstellen'
-                         }
-                         )
-                         .done(function (data) {
-                         console.log(data);
-                         });
-                         }
-                         }
-                         });*/
-                    }
-                });
+                var amount = prompt("Bitte Anzahl die verkauft werden soll eingeben");
+                //var limit = ($(this).parent().parent().children('span').last().children('a').text().replace(',', '.'));
+                var limit = $(this).text();
+                var params = new Object();
+                params.aktie = aktie;
+                params.anzahl = amount;
+                params.order = "buy";
+                params.limit = limit;
+                params.submit = "Order erstellen";
+                var $token = getToken(tokenurl);
+                $.when(getToken(tokenurl)).then(
+                    function (data) {
+                        createOrder(data, params);
+                    })
             });
             $('#depot a.sell').on('click', function (e) {
                 e.preventDefault();
@@ -183,8 +157,12 @@
 
         function forumChanges() {
             $('table.thread tr').each(function () {
-                var postid = $(this).children('td').children('td.posttext').prop('id');
-                $(this).children('td').children('h3').prepend('<a href="' + window.location + '#' + postid + '>#' + postid + '</a>');
+                var postid = $(this).children('td.posttext').prop('id');
+                console.log($(this).children('td:not(.posttext)'));
+                var link = '<p><a href="' + window.location + '#' + postid + '">#' + postid + '</a></p>';
+                if ($(this).children('td:not(.posttext)').attr('rowspan') == '2') {
+                    $(this).children('td:not(.posttext)').prepend(link);
+                }
 
             })
 
@@ -234,7 +212,7 @@
             var AGHversion = "0.0.1";
             var AGTweak = {};
             var AGH = {};
-
+            init();
         }
 
         function AG_checkIfLoaded() {
@@ -242,7 +220,7 @@
             try {
                 if (docstate !== undefined) {
                     if (docstate == "complete") {
-                        init();
+                        createTweak();
                     } else {
                         window.setTimeout(AG_checkIfLoaded, 1000);
                     }
