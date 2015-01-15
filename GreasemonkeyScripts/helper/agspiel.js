@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name AG-Spiel.de Helper
 // @namespace http://notforu.com
-// @version 0.0.2
+// @version 0.0.1
 // @description adds some useful things to AG-Spiel.de
 // @match http://www.ag-spiel.de/*
 // @copyright 2014+, Tr0nYx
