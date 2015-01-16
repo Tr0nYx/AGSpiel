@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name AG-Spiel.de Helper
 // @namespace http://notforu.com
-// @version 0.1
+// @version 0.0.1
 // @description adds some useful things to AG-Spiel.de
 // @match http://www.ag-spiel.de/*
 // @copyright 2014+, Tr0nYx
+// @downloadURL https://raw.githubusercontent.com/Tr0nYx/AGSpiel/master/GreasemonkeyScripts/helper/agspiel.js
 // @updateUrl https://raw.githubusercontent.com/Tr0nYx/AGSpiel/master/GreasemonkeyScripts/helper/agspiel.js
 // @require http://code.jquery.com/jquery-latest.js
 // @require https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js
