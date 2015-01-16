@@ -1,4 +1,5 @@
 Details:
+QuickSells are always set to the next full 5 minute Tick
 1. Depot:
     - add link for quick sell current buyorder
     - add link for quick buy

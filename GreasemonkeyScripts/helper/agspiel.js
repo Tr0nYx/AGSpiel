@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name AG-Spiel.de Helper
 // @namespace http://notforu.com
-// @version 0.0.1
+// @version 0.2
 // @description adds some useful things to AG-Spiel.de
 // @match http://www.ag-spiel.de/*
 // @copyright 2014+, Tr0nYx
@@ -36,11 +36,14 @@
                 } else {
                     var agid = $(this).children('td:first').children('a').last().prop('href').split("&")[1].split("=")[1];
                     var buy = $(this).children('td[align="center"]').children('span.red');
-                    var buyval = parseFloat(buy.text().replace(',', '.')).toFixed(2);
+                    var buyval = buy.text();
                     var sell = $(this).children('td[align="center"]').children('span.green');
                     var sellval = sell.text();
                     var amount = $(this).children('td:nth-child(3)').text();
-                    buy.html('<a href="#" class="buy">' + buyval + "</a>");
+                    if (!(buyval.match('n.a.'))) {
+                        //buyval = parseFloat(buy.text().replace(',', '.')).toFixed(2);
+                        buy.html('<a href="#" class="buy">' + buyval + "</a>");
+                    }
                     if (!(sellval.match('n.a.'))) {
                         sell.html('<a href="#" class="sell">' + sellval + "</a><br />");
                     }
@@ -251,7 +254,12 @@
         function createOrder(data, params) {
             var div = $($.parseHTML(data)).find('#orderform');
             var token = $(div).find('input[name=token]').val();
-            var url = "http://www.ag-spiel.de/index.php?section=agorderbuch&action=create&ele=";
+            var mins = $(div).find('input[name=gab_minute]').val();
+            var tag = $(div).find('input[name=gab_tag]').val();
+            var monat = $(div).find('input[name=gab_monat]').val();
+            var jahr = $(div).find('input[name=gab_jahr]').val();
+            var stunde = $(div).find('input[name=gab_stunde]').val();
+            var minsup = parseInt(mins / 5) * 5 + 5;
             $.post(
                 "http://www.ag-spiel.de/index.php?section=agorderbuch&action=create&ele=",
                 {
@@ -259,6 +267,11 @@
                     anzahl: params.anzahl,
                     order: params.order,
                     limit: params.limit,
+                    gab_tag: tag,
+                    gab_monat: monat,
+                    gab_jahr: jahr,
+                    gab_stunde: stunde,
+                    gab_minute: minsup,
                     token: token,
                     submit: params.submit
                 }
