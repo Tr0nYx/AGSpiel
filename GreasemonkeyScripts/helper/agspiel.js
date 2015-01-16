@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name AG-Spiel.de Helper
 // @namespace http://notforu.com
-// @version 0.0.1
+// @version 0.1
 // @description adds some useful things to AG-Spiel.de
 // @match http://www.ag-spiel.de/*
 // @copyright 2014+, Tr0nYx
@@ -12,12 +12,13 @@
 
 (function () {
     var AG_mainFunction = function () {
-
         function init() {
             createCookies();
             addGlobalStyle(getGlobalStyle());
             if (/\bsection=agdepot\b/.test(location.search)) {
-                depotChanges();
+                if (!(/Keine Einträge gefunden./i.test($('table#depot tr').find('td').html()))) {
+                    depotChanges();
+                }
             }
             if (/\bsection=thread\b/.test(location.search)) {
                 forumChanges();
@@ -28,13 +29,13 @@
             createFormChangeCheckBoxes();
             $('#depot tr').each(function (i, v) {
                 if (i === 0) {
-                    $(this).append('<th num="23" class="geld" role="columnheader" tabindex="0" aria-controls="depot" rowspan="1" colspan="1" aria-label="Verkauf: activate to sort column ascending" style="width: 46px;">Verkauf</th>');
-                    $(this).append('<th num="24" class="brief" role="columnheader" tabindex="0" aria-controls="depot" rowspan="1" colspan="1" aria-label="Kauf: activate to sort column ascending" style="width: 46px;">Kauf</th>');
+                    $(this).append('<th num="23" class="geld" role="columnheader" tabindex="0" aria-controls="depot" rowspan="1" colspan="1" aria-label="Verkauf: activate to sort column ascending" style="width: 46px;">Buy</th>');
+                    $(this).append('<th num="24" class="brief" role="columnheader" tabindex="0" aria-controls="depot" rowspan="1" colspan="1" aria-label="Unterbieten: activate to sort column ascending" style="width: 46px;">Sell</th>');
                     $(this).append('<th num="25" class="actions" role="columnheader" tabindex="0" aria-controls="depot" rowspan="1" colspan="1" aria-label="Actions: activate to sort column ascending" style="width: 46px;">Actions</th>');
                 } else {
                     var agid = $(this).children('td:first').children('a').last().prop('href').split("&")[1].split("=")[1];
                     var buy = $(this).children('td[align="center"]').children('span.red');
-                    var buyval = buy.text();
+                    var buyval = parseFloat(buy.text().replace(',', '.')).toFixed(2);
                     var sell = $(this).children('td[align="center"]').children('span.green');
                     var sellval = sell.text();
                     var amount = $(this).children('td:nth-child(3)').text();
@@ -42,8 +43,9 @@
                     if (!(sellval.match('n.a.'))) {
                         sell.html('<a href="#" class="sell">' + sellval + "</a><br />");
                     }
+                    var selllower = parseFloat(buy.text().replace(',', '.')) - 0.01;
                     $(this).append('<td class="geld">' + sellval + '</td>');
-                    $(this).append('<td class="brief">' + buyval + '</td>');
+                    $(this).append('<td class="brief"><a href="#" class="selllower">' + selllower.toFixed(2) + '</a></td>');
                     $(this).append('' +
                         '<td class="actions">' +
                         '<a style="float: right" title="Zu Favoriten hinzufügen" href="index.php?section=favoriten&amp;aktie=' + agid + '&amp;action=add"><img src="ico/star_full.png"></a>' +
@@ -60,6 +62,7 @@
                 var aktie = $(this).closest('td').prev('td').prev('td').prev('td').children('a').last().prop('href').split("&")[1].split("=")[1];
                 var price = $(this).text();
                 var token = "";
+
                 var amount = prompt("Bitte Anzahl die verkauft werden soll eingeben");
                 //var limit = ($(this).parent().parent().children('span').last().children('a').text().replace(',', '.'));
                 var limit = $(this).text();
@@ -81,7 +84,6 @@
                 var aktie = $(this).closest('td').prev('td').prev('td').prev('td').children('a').last().prop('href').split("&")[1].split("=")[1];
                 var stock = $(this).closest('td').prev('td').text().replace('.', '');
                 var amount = prompt("Bitte Anzahl die verkauft werden soll eingeben", stock);
-                //var limit = ($(this).parent().parent().children('span').last().children('a').text().replace(',', '.'));
                 var limit = $(this).text();
                 var params = new Object();
                 params.aktie = aktie;
@@ -89,10 +91,28 @@
                 params.order = "sell";
                 params.limit = limit;
                 params.submit = "Order erstellen";
-                var $token = getToken(tokenurl);
                 $.when(getToken(tokenurl)).then(
                     function (data) {
                         createOrder(data, params);
+                    })
+            });
+            $('#depot a.selllower').on('click', function (e) {
+                e.preventDefault();
+                var tokenurl = $(this).parent('td').parent('tr').children('td:first').children('a').last().prop('href');
+                var aktie = $(this).parent('td').parent('tr').children('td:first').children('a').last().prop('href').split("&")[1].split("=")[1];
+                var stock = $(this).parent('td').parent('tr').children('td:nth-child(3)').text().replace('.', '');
+                var token = "";
+                var limit = $(this).text();
+                var params = new Object();
+                params.aktie = aktie;
+                params.tokenurl = tokenurl;
+                params.anzahl = stock;
+                params.order = "sell";
+                params.limit = limit;
+                params.submit = "Order erstellen";
+                var check = $.when(getOrderbuch()).then(
+                    function (data) {
+                        checkforSell(data, params);
                     })
             });
         }
@@ -133,6 +153,98 @@
                 method: "GET",
                 url: url
             });
+        }
+
+        function getOrderbuch() {
+            return $.ajax({
+                method: "GET",
+                url: "http://www.ag-spiel.de/index.php?section=agorderbuch"
+            });
+        }
+
+        function checkforSell(data, params) {
+            var div = $($.parseHTML(data)).find('table#openorders tbody');
+            var exists = 0;
+            var price = "";
+            var modalparams = new Object;
+            $(div).find('tr').each(function () {
+                var text = $(this).find('td').first().find('a').html().split('<br>')[0];
+                modalparams.link = $(this).find('td').last().children('a').attr('href');
+                var tdprice = $(this).find('td:nth-child(5)').find('a');
+                var style = $(tdprice).parent().css('border');
+                price = $(tdprice).html();
+                var patt = new RegExp(params.aktie, 'i');
+                var result = text.match(patt);
+                if (result != null && !(/2px solid orange/i.test(style))) {
+                    exists = 1;
+                    return false;
+                } else if (result != null && (/2px solid orange/i.test(style))) {
+                    exists = 2;
+                    return false;
+                } else {
+                    exists = 0;
+                }
+            })
+
+            if (exists == 1) {
+                modalparams.content = "Wollen sie ihre aktuelle SellOrder für " + price + "€ auf " + params.limit + "€ stellen?";
+                modalparams.title = "Bereits bestehende Sellorder";
+                createDialog(modalparams, params, exists);
+            } else if (exists == 2) {
+                modalparams.content = "geht nicht günstiger";
+                modalparams.title = "Ihre Sellorder ist bereits die günstigste";
+                createDialog(modalparams, params);
+            } else if (exists == 0) {
+                modalparams.content = "Sellorder für " + params.limit + "€ tätigen?";
+                modalparams.title = "Sellorder tätigen";
+                createDialog(modalparams, params, exists);
+            }
+        }
+
+        function createDialog(modalparams, params, exists) {
+            $('<div></div>').appendTo('body')
+                .html('<div><p>' + modalparams.content + '</p></div>')
+                .dialog({
+                    modal: true,
+                    title: modalparams.title,
+                    zIndex: 10000,
+                    autoOpen: true,
+                    width: 'auto',
+                    resizable: false,
+                    buttons: {
+                        Ja: function () {
+                            if (exists == 1) {
+                                resellOrder(params, modalparams.link)
+                            } else {
+                                $.when(getToken(params.tokenurl)).then(
+                                    function (data) {
+                                        createOrder(data, params);
+                                    })
+                            }
+                            $(this).dialog("close");
+                        },
+                        Nein: function () {
+                            $(this).dialog("close");
+                        }
+                    },
+                    close: function (event, ui) {
+                        $(this).remove();
+                    }
+                });
+        }
+
+        function stopOrder(url) {
+            return $.ajax({
+                method: "GET",
+                url: 'http://www.ag-spiel.de/' + url
+            });
+        }
+
+        function resellOrder(params, stopurl) {
+            $.when(stopOrder(stopurl)).then(getToken(params.tokenurl)).then(
+                function (data) {
+                    createOrder(data, params);
+                })
         }
 
         function createOrder(data, params) {
