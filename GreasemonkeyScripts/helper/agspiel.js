@@ -308,13 +308,80 @@
                 '<td><select name="anteil"><option>Bitte wählen</option><option value=""now">Jetzt</option><option value="0">0%</option><option value="5">5%</option></select></td>' +
                 '<td><select name="time"><option>Bitte wählen</option><option value="day">1 Tag</option><option value="12hours">12 Stunden</option></select></td>' +
                 '</tr>');
+            makeTableSortable();
             bindneueAgsInputs();
         }
 
+        function makeTableSortable() {
+            $('table#neueAgs tbody tr').removeClass('even').removeClass('odd');
+            zebraRows('table#neueAgs tbody tr:odd', 'odd');
+            $('table#neueAgs tbody tr').hover(function () {
+                $(this).find('td').addClass('hovered');
+            }, function () {
+                $(this).find('td').removeClass('hovered');
+            });
+            //grab all header rows
+            $('table#neueAgs thead th').each(function (column) {
+                $(this).addClass('sortable').click(function () {
+                    var findSortKey = function ($cell) {
+                        return $cell.find('.sort-key').text().toUpperCase() + ' ' + $cell.text().toUpperCase();
+                    };
+                    var sortDirection = $(this).is('.sorted-asc') ? -1 : 1;
+
+                    //step back up the tree and get the rows with data
+                    //for sorting
+                    var $rows = $(this).parent().parent().parent().find('tbody tr').get();
+
+                    //loop through all the rows and find
+                    $.each($rows, function (index, row) {
+                        if($(row).children('td').attr('colspan')){
+                            $(row).children('td').hide();
+                        }
+                        row.sortKey = findSortKey($(row).children('td').eq(column));
+                    });
+
+                    //compare and sort the rows alphabetically
+                    $rows.sort(function (a, b) {
+                        if (a.sortKey < b.sortKey) return -sortDirection;
+                        if (a.sortKey > b.sortKey) return sortDirection;
+                        return 0;
+                    });
+
+                    //add the rows in the correct order to the bottom of the table
+                    $.each($rows, function (index, row) {
+                        $('tbody').append(row);
+                        row.sortKey = null;
+                    });
+
+                    //identify the column sort order
+                    $('th').removeClass('sorted-asc sorted-desc');
+                    var $sortHead = $('th').filter(':nth-child(' + (column + 1) + ')');
+                    sortDirection == 1 ? $sortHead.addClass('sorted-asc') : $sortHead.addClass('sorted-desc');
+
+                    //identify the column to be sorted by
+                    $('td').removeClass('sorted')
+                        .filter(':nth-child(' + (column + 1) + ')')
+                        .addClass('sorted');
+
+                    $('tr.visible').removeClass('odd');
+                    zebraRows('tr.visible:even', 'odd');
+                });
+            });
+
+        }
+
+        //used to apply alternating row styles
+        function zebraRows(selector, className) {
+            $(selector).removeClass(className).addClass(className);
+        }
+
         function bindneueAgsInputs() {
-            $('table#neueAgs tbody tr select[name=anteil]').on('change', function () {
+            $('table#neueAgs tbody tr select[name=time]').on('change', function () {
+                var maxval = $(this).val();
                 $('table#neueAgs tbody tr:gt(0)').each(function () {
-                    console.log($(this).val());
+                    var lastonline = $(this).children('td').eq(9).text();
+                    if (maxval == "day") {
+                    }
                 })
             })
             $('table#neueAgs tbody tr input[name=bargeld]').on('keyup', function () {
@@ -322,9 +389,9 @@
                 $('table#neueAgs tbody tr:gt(0)').each(function () {
                     var percentage = parseFloat($(this).children('td').eq(2).text().replace('€', '').replace('.', ''));
                     if (percentage > maxval) {
-                        $(this).hide();
+                        $(this).hide().removeClass('visible');
                     } else {
-                        $(this).show();
+                        $(this).show().addClass('visible');
                     }
                 })
             })
@@ -333,9 +400,9 @@
                 $('table#neueAgs tbody tr:gt(0)').each(function () {
                     var percentage = parseFloat($(this).children('td').eq(3).text().replace('€', '').replace('.', ''));
                     if (percentage > maxval) {
-                        $(this).hide();
+                        $(this).hide().removeClass('visible');
                     } else {
-                        $(this).show();
+                        $(this).show().addClass('visible');
                     }
                 })
             })
@@ -344,9 +411,9 @@
                 $('table#neueAgs tbody tr:gt(0)').each(function () {
                     var percentage = parseFloat($(this).children('td').eq(4).text().replace('€', '').replace(',', '.'));
                     if (percentage > maxval) {
-                        $(this).hide();
+                        $(this).hide().removeClass('visible');
                     } else {
-                        $(this).show();
+                        $(this).show().addClass('visible');
                     }
                 })
             })
@@ -355,9 +422,9 @@
                 $('table#neueAgs tbody tr:gt(0)').each(function () {
                     var percentage = parseFloat($(this).children('td').eq(5).text().replace('€', '').replace(',', '.'));
                     if (percentage > maxval) {
-                        $(this).hide();
+                        $(this).hide().removeClass('visible');
                     } else {
-                        $(this).show();
+                        $(this).show().addClass('visible');
                     }
                 })
             })
@@ -366,9 +433,9 @@
                 $('table#neueAgs tbody tr:gt(0)').each(function () {
                     var percentage = $(this).children('td').eq(6).text().replace('%', '');
                     if (percentage > maxval) {
-                        $(this).hide();
+                        $(this).hide().removeClass('visible');
                     } else {
-                        $(this).show();
+                        $(this).show().addClass('visible');
                     }
                 })
             })
@@ -387,9 +454,13 @@
         }
 
         function getGlobalStyle() {
-            var css = "														\
+            var css = "									 \
  span.green a{text-decoration:underline;color: #009900}  \
- span.red a{text-decoration:underline;color: #BB0000}	\
+ span.red a{text-decoration:underline;color: #BB0000}	 \
+th.sortable { color: #666;cursor: pointer;text-decoration:underline;}\
+th.sortable:hover{color: black;}\
+th.sorted-asc, th.sorted-desc{color: black;} \
+td.hovered{background-color: lightblue;color: #666;}\
  ";
             return css;
         }
@@ -458,4 +529,5 @@
     if (/ag-spiel\.de/i.test(document.domain)) {
         document.getElementsByTagName("head")[0].appendChild(agTweakScript);
     }
-})();
+})
+();
