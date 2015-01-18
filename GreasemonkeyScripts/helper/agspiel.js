@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name AG-Spiel.de Helper
 // @namespace http://notforu.com
-// @version 0.2
+// @version 0.0.1
 // @description adds some useful things to AG-Spiel.de
 // @match http://www.ag-spiel.de/*
 // @copyright 2014+, Tr0nYx
@@ -23,6 +23,9 @@
             }
             if (/\bsection=thread\b/.test(location.search)) {
                 forumChanges();
+            }
+            if (/\bsection=neue\b/.test(location.search)) {
+                neueAgsChanges();
             }
         }
 
@@ -289,9 +292,86 @@
                 if ($(this).children('td:not(.posttext)').attr('rowspan') == '2') {
                     $(this).children('td:not(.posttext)').prepend(link);
                 }
-
             })
+        }
 
+        function neueAgsChanges() {
+            $('table#neueAgs tbody tr:first').before('<tr><td colspan="10" style="text-align:center; font-weight:bold;">Alle Eingabefelder sind die Maximalwerte!</td></tr><tr>' +
+                '<td></td>' +
+                '<td></td>' +
+                '<td><input type="text" name="bargeld" size="2"></td>' +
+                '<td><input type="text" name="depotwert" size="2"></td>' +
+                '<td><input type="text" name="bwaktie" size="2"></td>' +
+                '<td><input type="text" name="briefkurs" size="2"></td>' +
+                '<td><input type="text" name="briefbw" size="2"></td>' +
+                '<td></td>' +
+                '<td><select name="anteil"><option>Bitte wählen</option><option value=""now">Jetzt</option><option value="0">0%</option><option value="5">5%</option></select></td>' +
+                '<td><select name="time"><option>Bitte wählen</option><option value="day">1 Tag</option><option value="12hours">12 Stunden</option></select></td>' +
+                '</tr>');
+            bindneueAgsInputs();
+        }
+
+        function bindneueAgsInputs() {
+            $('table#neueAgs tbody tr select[name=anteil]').on('change', function () {
+                $('table#neueAgs tbody tr:gt(0)').each(function () {
+                    console.log($(this).val());
+                })
+            })
+            $('table#neueAgs tbody tr input[name=bargeld]').on('keyup', function () {
+                var maxval = $(this).val();
+                $('table#neueAgs tbody tr:gt(0)').each(function () {
+                    var percentage = parseFloat($(this).children('td').eq(2).text().replace('€', '').replace('.', ''));
+                    if (percentage > maxval) {
+                        $(this).hide();
+                    } else {
+                        $(this).show();
+                    }
+                })
+            })
+            $('table#neueAgs tbody tr input[name=depotwert]').on('keyup', function () {
+                var maxval = $(this).val();
+                $('table#neueAgs tbody tr:gt(0)').each(function () {
+                    var percentage = parseFloat($(this).children('td').eq(3).text().replace('€', '').replace('.', ''));
+                    if (percentage > maxval) {
+                        $(this).hide();
+                    } else {
+                        $(this).show();
+                    }
+                })
+            })
+            $('table#neueAgs tbody tr input[name=bwaktie]').on('keyup', function () {
+                var maxval = $(this).val();
+                $('table#neueAgs tbody tr:gt(0)').each(function () {
+                    var percentage = parseFloat($(this).children('td').eq(4).text().replace('€', '').replace(',', '.'));
+                    if (percentage > maxval) {
+                        $(this).hide();
+                    } else {
+                        $(this).show();
+                    }
+                })
+            })
+            $('table#neueAgs tbody tr input[name=briefkurs]').on('keyup', function () {
+                var maxval = $(this).val();
+                $('table#neueAgs tbody tr:gt(0)').each(function () {
+                    var percentage = parseFloat($(this).children('td').eq(5).text().replace('€', '').replace(',', '.'));
+                    if (percentage > maxval) {
+                        $(this).hide();
+                    } else {
+                        $(this).show();
+                    }
+                })
+            })
+            $('table#neueAgs tbody tr input[name=briefbw]').on('keyup', function () {
+                var maxval = $(this).val();
+                $('table#neueAgs tbody tr:gt(0)').each(function () {
+                    var percentage = $(this).children('td').eq(6).text().replace('%', '');
+                    if (percentage > maxval) {
+                        $(this).hide();
+                    } else {
+                        $(this).show();
+                    }
+                })
+            })
         }
 
         function addGlobalStyle(css) {
@@ -314,7 +394,7 @@
             return css;
         }
 
-        //GM_[s|g]etValue not working?
+//GM_[s|g]etValue not working?
         function setCookie(key, value) {
             var expires = new Date();
             expires.setTime(expires.getTime() + (1 * 24 * 60 * 60 * 1000));
