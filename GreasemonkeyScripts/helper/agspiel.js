@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name AG-Spiel.de Helper
 // @namespace http://notforu.com
-// @version 0.0.1
+// @version 0.2
 // @description adds some useful things to AG-Spiel.de
 // @match http://www.ag-spiel.de/*
 // @copyright 2014+, Tr0nYx
@@ -32,6 +32,7 @@
         function depotChanges() {
             createFormChangeCheckBoxes();
             $('#depot tr').each(function (i, v) {
+                var html = "";
                 if (i === 0) {
                     $(this).append('<th num="23" class="geld" role="columnheader" tabindex="0" aria-controls="depot" rowspan="1" colspan="1" aria-label="Verkauf: activate to sort column ascending" style="width: 46px;">Buy</th>');
                     $(this).append('<th num="24" class="brief" role="columnheader" tabindex="0" aria-controls="depot" rowspan="1" colspan="1" aria-label="Unterbieten: activate to sort column ascending" style="width: 46px;">Sell</th>');
@@ -53,10 +54,14 @@
                     var selllower = parseFloat(buy.text().replace(',', '.')) - 0.01;
                     $(this).append('<td class="geld">' + sellval + '</td>');
                     $(this).append('<td class="brief"><a href="#" class="selllower">' + selllower.toFixed(2) + '</a></td>');
-                    $(this).append('' +
-                        '<td class="actions">' +
-                        '<a style="float: right" title="Zu Favoriten hinzufügen" href="index.php?section=favoriten&amp;aktie=' + agid + '&amp;action=add"><img src="ico/star_full.png"></a>' +
-                        '<a style="float: right" href="index.php?section=beobachtungsliste&amp;action=add&amp;id=100352"><img title="auf die Beobachtungsliste setzen" src="ico/eye.png"></a></td>');
+                    if ($(this).hasClass('red')) {
+                        html = '<a style="float: right;text-indent: -9999px" class="showmessage button cross" href="#">Löschen</a>';
+                    }
+                    $(this).append(
+                            '<td class="actions">' +
+                            html +
+                            '<a style="float: right" title="Zu Favoriten hinzufügen" href="index.php?section=favoriten&amp;aktie=' + agid + '&amp;action=add"><img src="ico/star_full.png"></a>' +
+                            '<a style="float: right" href="index.php?section=beobachtungsliste&amp;action=add&amp;id=100352"><img title="auf die Beobachtungsliste setzen" src="ico/eye.png"></a></td>');
                 }
             });
             bindHrefs();
@@ -103,6 +108,15 @@
                         createOrder(data, params);
                     })
             });
+            $('#depot a.button.cross.showmessage').on('click', function (e) {
+                e.preventDefault();
+                var tokenurl = $(this).parent('td').parent('tr').children('td:first').children('a').last().prop('href');
+                var aktie = $(this).parent('td').parent('tr').children('td:first').children('a').last().prop('href').split("&")[1].split("=")[1];
+                var check = $.when(getOrderbuch()).then(
+                    function (data) {
+                        stopSellOrder(data, aktie);
+                    })
+            })
             $('#depot a.selllower').on('click', function (e) {
                 e.preventDefault();
                 var tokenurl = $(this).parent('td').parent('tr').children('td:first').children('a').last().prop('href');
@@ -122,6 +136,20 @@
                         checkforSell(data, params);
                     })
             });
+        }
+
+        function stopSellOrder(data, aktie) {
+            var div = $($.parseHTML(data)).find('table#openorders tbody');
+            $(div).find('tr').each(function () {
+                var text = $(this).find('td').first().find('a').html().split('<br>')[0];
+                var link = $(this).find('td').last().children('a').attr('href');
+                var patt = new RegExp(aktie, 'i');
+                var result = text.match(patt);
+                if (result != null) {
+                    stopOrder(link);
+                }
+            })
+
         }
 
         function createFormChangeCheckBoxes() {
@@ -287,7 +315,6 @@
         function forumChanges() {
             $('table.thread tr').each(function () {
                 var postid = $(this).children('td.posttext').prop('id');
-                console.log($(this).children('td:not(.posttext)'));
                 var link = '<p><a href="' + window.location + '#' + postid + '">#' + postid + '</a></p>';
                 if ($(this).children('td:not(.posttext)').attr('rowspan') == '2') {
                     $(this).children('td:not(.posttext)').prepend(link);
@@ -334,7 +361,7 @@
 
                     //loop through all the rows and find
                     $.each($rows, function (index, row) {
-                        if($(row).children('td').attr('colspan')){
+                        if ($(row).children('td').attr('colspan')) {
                             $(row).children('td').hide();
                         }
                         row.sortKey = findSortKey($(row).children('td').eq(column));
