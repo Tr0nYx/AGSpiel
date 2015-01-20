@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name AG-Spiel.de Helper
 // @namespace http://notforu.com
-// @version 0.3
+// @version 0.3.2
 // @description adds some useful things to AG-Spiel.de
 // @match http://www.ag-spiel.de/*
 // @copyright 2014+, Tr0nYx
@@ -16,6 +16,7 @@
         function init() {
             createCookies();
             addMenuEntry();
+            addNavButton();
             addGlobalStyle(getGlobalStyle());
             if (/\bsection=agdepot\b/.test(location.search)) {
                 if (!(/Keine Einträge gefunden./i.test($('table#depot tr').find('td').html()))) {
@@ -35,6 +36,23 @@
             $('a.advancedchat').on('click', function () {
                 openChat();
             });
+
+        }
+
+        function addNavButton() {
+            $('#top').before(
+                    '<nav><ul><li id="advancedchat"><a id="chat-trigger" href="#">Chat<span>▼</span></a>' +
+                    '<div id="chat-content">' +
+                    '<iframe src="http://217.79.181.59:2001" width="1200px" height="600px"/>' +
+                    '</div></li></ul></nav>'
+            )
+            $('#chat-trigger').click(function () {
+                $(this).next('#chat-content').slideToggle();
+                $(this).toggleClass('active');
+
+                if ($(this).hasClass('active')) $(this).find('span').html('&#x25B2;')
+                else $(this).find('span').html('&#x25BC;')
+            })
 
         }
 
@@ -501,7 +519,15 @@ th.sortable { color: #666;cursor: pointer;text-decoration:underline;}\
 th.sortable:hover{color: black;}\
 th.sorted-asc, th.sorted-desc{color: black;} \
 td.hovered{background-color: lightblue;color: #666;}\
- ";
+nav ul{margin: 0;padding: 0;list-style: none; position: relative;float: right;background: #eee;border-bottom: 1px solid #fff;border-radius: 3px;right:-15px;}\
+nav li{float: left;}\
+nav #advancedchat {border-right: 1px solid #ddd;box-shadow: 1px 0 0 #fff;list-style-type:none;}\
+nav #chat-trigger{display: inline-block;*display: inline;*zoom: 1;height: 25px;line-height: 25px;font-weight: bold;padding: 0 8px;text-decoration: none;color: #444;text-shadow: 0 1px 0 #fff;}\
+nav #chat-trigger{border-radius: 0 3px 3px 0;position:absolute;right:-62px;background: #eee;}\
+nav #chat-trigger:hover,nav #login .active{background: #fff;}\
+nav #chat-content {display: none;position: absolute;top: 0px;right: 0;z-index: 999;background: #fff;background-image: linear-gradient(top, #fff, #eee);padding: 15px;box-shadow: 0 2px 2px -1px rgba(0,0,0,.9);border-radius: 3px 0 3px 3px;}\
+nav li #chat-content {right: 50x;width: 1200px;}\
+";
             return css;
         }
 
