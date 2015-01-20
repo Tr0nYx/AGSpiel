@@ -39,7 +39,7 @@
         }
 
         function openChat() {
-            $('#chatbox').html('<iframe src="http://217.79.181.59:2001" width="100%" height="600px"/>')
+            $('#content').html('<iframe src="http://217.79.181.59:2001" width="100%" height="600px"/>')
         }
         
         function depotChanges() {
