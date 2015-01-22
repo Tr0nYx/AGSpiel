@@ -1,22 +1,23 @@
 // ==UserScript==
 // @name AG-Spiel.de Helper
 // @namespace http://notforu.com
-// @version 0.3.2
+// @version 0.3.6
 // @description adds some useful things to AG-Spiel.de
 // @match http://www.ag-spiel.de/*
 // @copyright 2014+, Tr0nYx
-// @downloadURL https://raw.githubusercontent.com/Tr0nYx/AGSpiel/master/GreasemonkeyScripts/helper/agspiel.js
-// @updateUrl https://raw.githubusercontent.com/Tr0nYx/AGSpiel/master/GreasemonkeyScripts/helper/agspiel.js
+// @downloadURL http://git.sitzdesign.de/root/internal/raw/master/GreasemonkeyScripts/helper/agspiel.js
+// @updateUrl http://git.sitzdesign.de/root/internal/raw/master/GreasemonkeyScripts/helper/agspiel.js
 // @require http://code.jquery.com/jquery-latest.js
 // @require https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js
 // ==/UserScript==
 
 (function () {
+    var username;
     var AG_mainFunction = function () {
         function init() {
             createCookies();
             addMenuEntry();
-            addNavButton();
+            //addNavButton();
             addGlobalStyle(getGlobalStyle());
             if (/\bsection=agdepot\b/.test(location.search)) {
                 if (!(/Keine Einträge gefunden./i.test($('table#depot tr').find('td').html()))) {
@@ -34,7 +35,10 @@
         function addMenuEntry() {
             $('div#nav').children('ul').children('li:nth-child(4)').children('ul').children('li:nth-child(4)').after('<li><a href="#advancedchat" class="advancedchat">Advanced Chat</a>');
             $('a.advancedchat').on('click', function () {
-                openChat();
+                $.when(getStartPage()).then(
+                    function (data) {
+                        getUserName(data);
+                    })
             });
 
         }
@@ -44,6 +48,7 @@
                     '<nav><ul><li id="advancedchat"><a id="chat-trigger" href="#">Chat<span>▼</span></a>' +
                     '<div id="chat-content">' +
                     '<iframe src="http://217.79.181.59:2001" width="1200px" height="600px"/>' +
+                        '<iframe src="http://www.wsirc.com/?username=wsirc_*****&server=217.79.181.18%3A6667&channel=%23hauptchannel" style="width:1200px;height:600px"></iframe>' +
                     '</div></li></ul></nav>'
             )
             $('#chat-trigger').click(function () {
@@ -56,10 +61,10 @@
 
         }
 
-        function openChat() {
-            $('#content').html('<iframe src="http://217.79.181.59:2001" width="100%" height="600px"/>')
+        function openChat(username) {
+            window.open("http://www.wsirc.com/?username=" + username + "&server=217.79.181.18%3A6667&channel=%23hauptchannel", "Advanced Chat");
         }
-        
+
         function depotChanges() {
             createFormChangeCheckBoxes();
             $('#depot tr').each(function (i, v) {
@@ -83,6 +88,13 @@
                         sell.html('<a href="#" class="sell">' + sellval + "</a><br />");
                     }
                     var selllower = parseFloat(buy.text().replace(',', '.')) - 0.01;
+                    if ($(this).hasClass('red')) {
+                        var sellorder = $(this).children('td:nth-child(8)').text().split(' ')[4];
+                        sellorder = sellorder.substring(0, sellorder.length - 1);
+                        if (buy.text() == sellorder) {
+                            console.log(sellorder);
+                        }
+                    }
                     $(this).append('<td class="geld">' + sellval + '</td>');
                     $(this).append('<td class="brief"><a href="#" class="selllower">' + selllower.toFixed(2) + '</a></td>');
                     if ($(this).hasClass('red')) {
@@ -226,6 +238,19 @@
                 method: "GET",
                 url: "http://www.ag-spiel.de/index.php?section=agorderbuch"
             });
+        }
+
+        function getStartPage() {
+            return $.ajax({
+                method: "GET",
+                url: "http://www.ag-spiel.de/index.php?section=start"
+            });
+        }
+
+        function getUserName(data) {
+            var div = $($.parseHTML(data)).find('div#content');
+            var username = $(div).children('span.big').text();
+            openChat(username);
         }
 
         function checkforSell(data, params) {
